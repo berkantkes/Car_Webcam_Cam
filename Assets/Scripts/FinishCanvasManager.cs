@@ -7,7 +7,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PhotoGallery : MonoBehaviour
+public class FinishCanvasManager : MonoBehaviour
 {
     [SerializeField] private List<Image> photoSlots; 
     [SerializeField] private TMP_Text _timeText; 

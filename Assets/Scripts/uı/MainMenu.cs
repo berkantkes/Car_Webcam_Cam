@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
@@ -11,7 +12,7 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private Button _exitButton;
     [SerializeField] private StartPopUpController _startPopUpController; 
     [SerializeField] private SettingsPopUpController _settingsPopUpController;
-    [SerializeField] private PhotoGallery _photoGallery;
+    [FormerlySerializedAs("_photoGallery")] [SerializeField] private FinishCanvasManager finishCanvasManager;
 
     private bool isSoundOn = true;
 

@@ -3,25 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEngine.Serialization;
 using UnityEngine.Windows.WebCam;
 
-public class BannerTrigger : MonoBehaviour
+public class TakePhotoManager : MonoBehaviour
 {
-    [SerializeField] private List<Banner> bannerList;
-    [SerializeField] private PhotoGallery _photoGallery;
-
-    private int lapCount = 0;
-    private int checkpointCount = 0;
-    private int startLineTouchCount = 0;
+    [SerializeField] private BannerManager _bannerManager; // 📌 BannerManager referansı
+    [FormerlySerializedAs("_photoGallery")] [SerializeField] private FinishCanvasManager finishCanvasManager;
 
     private PhotoCapture photoCaptureObject;
     private Texture2D targetTexture;
     private string photoSavePath;
-    private bool isPhotoModeActive = false; // **Kamera aktif mi takip etmek için bayrak**
+    private bool isPhotoModeActive = false;
 
-    void Start()
+    public void Initialize()
     {
-        photoSavePath = Path.Combine(Application.dataPath, "Resources/CapturedPhotos");
+        photoSavePath = Path.Combine(Application.persistentDataPath, "CapturedPhotos");
         if (!Directory.Exists(photoSavePath))
         {
             Directory.CreateDirectory(photoSavePath);
@@ -40,79 +37,37 @@ public class BannerTrigger : MonoBehaviour
                 pixelFormat = CapturePixelFormat.BGRA32
             };
 
-            // **Kamerayı Başlat**
             photoCaptureObject.StartPhotoModeAsync(cameraParameters, result =>
             {
                 isPhotoModeActive = result.success;
                 Debug.Log("Photo mode started: " + isPhotoModeActive);
+                
+                // 📌 **12 saniyede bir fotoğraf çekmeye başla**
+                StartCoroutine(CapturePhotoRoutine());
             });
         });
     }
 
-    void Update()
+    private IEnumerator CapturePhotoRoutine()
     {
-        if (checkpointCount >= bannerList.Count)
+        while (isPhotoModeActive)
         {
-            lapCount++;
-            checkpointCount = 0;
-            Debug.Log($"Tur tamamlandı! Şu an {lapCount}. turdayız.");
+            yield return new WaitForSeconds(12f);
+            TakePhoto();
         }
     }
 
-    void OnTriggerEnter(Collider other)
+    private void TakePhoto()
     {
-        if (other.CompareTag("Banner"))
-        {
-            if (lapCount >= 3) return;
+        if (!isPhotoModeActive) return;
 
-            Banner hitBanner = bannerList.Find(b => b.bannerObject == other.gameObject);
-            if (hitBanner == null) return;
-
-            checkpointCount++;
-
-            int bannerIndex = bannerList.IndexOf(hitBanner);
-
-            if ((lapCount == 0 && bannerIndex % 2 == 0) ||
-                (lapCount == 1 && bannerIndex % 2 != 0))
-            {
-                TakePhoto(hitBanner);
-            }
-        }
-        else if (other.CompareTag("StartLine"))
-        {
-            startLineTouchCount++;
-            if (startLineTouchCount == 4)
-            {
-                EventManager.Execute(GameEvents.OnFinishGame);
-                Debug.Log("Game finished!");
-                _photoGallery.LoadPhotos();
-                
-                // 📌 **Oyun bittiğinde kamerayı kapat**
-                if (isPhotoModeActive)
-                {
-                    photoCaptureObject.StopPhotoModeAsync(result =>
-                    {
-                        photoCaptureObject.Dispose();
-                        photoCaptureObject = null;
-                        isPhotoModeActive = false;
-                        Debug.Log("Photo mode stopped.");
-                    });
-                }
-            }
-        }
-    }
-
-    void TakePhoto(Banner banner)
-    {
-        if (!isPhotoModeActive) return; // 📌 **Fotoğraf modu aktif değilse çekme**
-        
         photoCaptureObject.TakePhotoAsync((captureResult, photoCaptureFrame) =>
         {
-            StartCoroutine(OnCapturedPhotoToMemory(captureResult, photoCaptureFrame, banner));
+            StartCoroutine(OnCapturedPhotoToMemory(captureResult, photoCaptureFrame));
         });
     }
 
-    IEnumerator OnCapturedPhotoToMemory(PhotoCapture.PhotoCaptureResult result, PhotoCaptureFrame photoCaptureFrame, Banner banner)
+    private IEnumerator OnCapturedPhotoToMemory(PhotoCapture.PhotoCaptureResult result, PhotoCaptureFrame photoCaptureFrame)
     {
         if (result.success)
         {
@@ -122,7 +77,7 @@ public class BannerTrigger : MonoBehaviour
             targetTexture.LoadRawTextureData(imageBufferList.ToArray());
             targetTexture.Apply();
 
-            // 📌 Fotoğrafı ters çevirme işlemini optimize etmek için Coroutine kullan
+            // 📌 **Görüntüyü Dikey Olarak Çevir**
             yield return StartCoroutine(FlipTextureVertically(targetTexture));
 
             // PNG olarak kaydet
@@ -132,14 +87,13 @@ public class BannerTrigger : MonoBehaviour
             File.WriteAllBytes(filePath, imageBytes);
             Debug.Log($"Photo saved to: {filePath}");
 
-            // Fotoğrafı ilgili banner'ın SpriteRenderer'ına atama
+            // 📌 **Fotoğrafı bir Sprite olarak oluştur ve BannerManager'a gönder**
             Sprite photoSprite = Sprite.Create(targetTexture, new Rect(0, 0, targetTexture.width, targetTexture.height), new Vector2(0.5f, 0.5f));
-            banner.spriteRenderer.sprite = photoSprite;
+            _bannerManager.SetBannerSprite(photoSprite);
         }
     }
 
-    // 📌 **Görüntüyü Dikey Olarak Çevirme (Coroutine ile daha hızlı)**
-    IEnumerator FlipTextureVertically(Texture2D original)
+    private IEnumerator FlipTextureVertically(Texture2D original)
     {
         int width = original.width;
         int height = original.height;
@@ -152,15 +106,28 @@ public class BannerTrigger : MonoBehaviour
 
             for (int x = 0; x < width; x++)
             {
-                // Piksel yer değiştir
                 Color temp = pixels[topIndex + x];
                 pixels[topIndex + x] = pixels[bottomIndex + x];
                 pixels[bottomIndex + x] = temp;
             }
-            yield return null; // Her satırda bir kare bekle (Oyun donmasın diye)
+            yield return null;
         }
 
         original.SetPixels(pixels);
         original.Apply();
+    }
+
+    private void OnDestroy()
+    {
+        if (isPhotoModeActive)
+        {
+            photoCaptureObject.StopPhotoModeAsync(result =>
+            {
+                photoCaptureObject.Dispose();
+                photoCaptureObject = null;
+                isPhotoModeActive = false;
+                Debug.Log("Photo mode stopped.");
+            });
+        }
     }
 }
