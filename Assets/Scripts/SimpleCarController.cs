@@ -1,19 +1,21 @@
 using System;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class SimpleCarController : MonoBehaviour
 {
     [SerializeField] private Rigidbody _carRigidbody;
     [SerializeField] private MeshCollider _meshCollider;
     
-    public int maxSpeed = 175;
-    public int maxReverseSpeed = 55;
-    public int accelerationMultiplier = 7;
-    public int maxSteeringAngle = 30;
-    public float steeringSpeed = 0.3f;
-    public int brakeForce = 450;
-    public int decelerationMultiplier = 2;
+    private int maxSpeed = 750;
+    private int maxReverseSpeed = 55;
+    private int accelerationMultiplier = 19;
+    private int maxSteeringAngle = 45;
+    private float steeringSpeed = 0.6f;
+    private int brakeForce = 500;
+    private int decelerationMultiplier = 2;
+    private float naturalDrag = .5f; //  // 🔹 Yan kaymayı önlemek için stabilizasyon kuvvetiaz kesildiğinde daha hızlı yavaşlasın
+    public float stabilizationForce = 5f; // 
+
     public Vector3 bodyMassCenter = new Vector3(0, -0.5f, 0);
 
     public WheelCollider frontLeftCollider, frontRightCollider, rearLeftCollider, rearRightCollider;
@@ -26,6 +28,8 @@ public class SimpleCarController : MonoBehaviour
         _carRigidbody.isKinematic = false;
         _carRigidbody.centerOfMass = bodyMassCenter;
         _meshCollider.enabled = true;
+
+        AdjustWheelFriction(); // 🔹 Drift'i azaltmak için sürtünmeyi ayarla
     }
 
     private void OnEnable()
@@ -35,7 +39,7 @@ public class SimpleCarController : MonoBehaviour
 
     private void OnDisable()
     {
-        EventManager.Subscribe(GameEvents.OnFinishGame, OnGameFinish);
+        EventManager.Unsubscribe(GameEvents.OnFinishGame, OnGameFinish);
     }
 
     void Update()
@@ -50,6 +54,8 @@ public class SimpleCarController : MonoBehaviour
         if (Input.GetKey(KeyCode.A)) TurnLeft();
         else if (Input.GetKey(KeyCode.D)) TurnRight();
         else ResetSteeringAngle();
+
+        ApplyStabilization(); // 🔹 Drift sırasında aracı dengele
 
         AnimateWheelMeshes();
     }
@@ -74,16 +80,27 @@ public class SimpleCarController : MonoBehaviour
         else
         {
             rearLeftCollider.brakeTorque = rearRightCollider.brakeTorque = 0;
-            if (Mathf.Abs(_carRigidbody.velocity.magnitude * 3.6f) < (direction > 0 ? maxSpeed : maxReverseSpeed))
+
+            if (direction == 0)
             {
-                rearLeftCollider.motorTorque = rearRightCollider.motorTorque = torque;
+                rearLeftCollider.motorTorque = rearRightCollider.motorTorque = 0;
+                _carRigidbody.drag = naturalDrag;
+            }
+            else
+            {
+                _carRigidbody.drag = 0;
+
+                if (Mathf.Abs(_carRigidbody.velocity.magnitude * 3.6f) < (direction > 0 ? maxSpeed : maxReverseSpeed))
+                {
+                    rearLeftCollider.motorTorque = rearRightCollider.motorTorque = torque;
+                }
             }
         }
     }
 
     void Brakes()
     {
-        rearLeftCollider.brakeTorque = rearRightCollider.brakeTorque = brakeForce * 0.3f;
+        rearLeftCollider.brakeTorque = rearRightCollider.brakeTorque = brakeForce;
     }
 
     void SetSteering(float direction)
@@ -111,5 +128,34 @@ public class SimpleCarController : MonoBehaviour
     private void OnGameFinish()
     {
         _meshCollider.enabled = false;
+    }
+
+    // 🔹 Drift'i azaltmak için sürtünme değerlerini artır
+    private void AdjustWheelFriction()
+    {
+        SetFriction(frontLeftCollider, 1.5f, 2.5f);
+        SetFriction(frontRightCollider, 1.5f, 2.5f);
+        SetFriction(rearLeftCollider, 2f, 3.5f);
+        SetFriction(rearRightCollider, 2f, 3.5f);
+    }
+
+    private void SetFriction(WheelCollider wheel, float forwardStiffness, float sidewaysStiffness)
+    {
+        WheelFrictionCurve forwardFriction = wheel.forwardFriction;
+        forwardFriction.stiffness = forwardStiffness;
+        wheel.forwardFriction = forwardFriction;
+
+        WheelFrictionCurve sidewaysFriction = wheel.sidewaysFriction;
+        sidewaysFriction.stiffness = sidewaysStiffness;
+        wheel.sidewaysFriction = sidewaysFriction;
+    }
+
+    // 🔹 Aracın fazla kaymasını engelle
+    private void ApplyStabilization()
+    {
+        if (Mathf.Abs(localVelocityX) > 2f) // Yan kayma algılanıyorsa
+        {
+            _carRigidbody.AddForce(-transform.right * localVelocityX * stabilizationForce, ForceMode.Acceleration);
+        }
     }
 }

@@ -15,6 +15,7 @@ public class TakePhotoManager : MonoBehaviour
     private Texture2D targetTexture;
     private string photoSavePath;
     private bool isPhotoModeActive = false;
+    private int captureCount = 0; 
 
     public void Initialize()
     {
@@ -50,10 +51,11 @@ public class TakePhotoManager : MonoBehaviour
 
     private IEnumerator CapturePhotoRoutine()
     {
-        while (isPhotoModeActive)
+        while (isPhotoModeActive && captureCount < 10) // 📌 10 kere çalışsın
         {
             yield return new WaitForSeconds(12f);
             TakePhoto();
+            captureCount++; // 📌 Her çalıştığında sayaç artır
         }
     }
 
