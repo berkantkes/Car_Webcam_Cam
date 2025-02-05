@@ -8,17 +8,19 @@ public class SimpleCarController : MonoBehaviour
     [SerializeField] private MeshCollider _meshCollider;
     [SerializeField] private Vector3 startPosition = new Vector3(-2f, 0f, 27.25f);
     [SerializeField] private Vector3 startRotation = new Vector3(0f, 270f, 0f);
+    [SerializeField] private AudioSource _carEngineSound; // This variable stores the sound of the car engine.
 
     private UiController _uiController;
-    private int maxSpeed = 750;
+    private int maxSpeed = 650;
     private int maxReverseSpeed = 55;
-    private int accelerationMultiplier = 19;
+    private int accelerationMultiplier = 16;
     private int maxSteeringAngle = 45;
     private float steeringSpeed = 0.6f;
     private int brakeForce = 500;
     private int decelerationMultiplier = 2;
     private float naturalDrag = .5f; //  // 🔹 Yan kaymayı önlemek için stabilizasyon kuvvetiaz kesildiğinde daha hızlı yavaşlasın
     public float stabilizationForce = 5f; // 
+    float initialCarEngineSoundPitch = .75f; // Used to store the initial pitch of the car engine sound.
 
     private Vector3 bodyMassCenter = new Vector3(0, 0, 0);
 
@@ -28,6 +30,7 @@ public class SimpleCarController : MonoBehaviour
     private float steeringAxis, throttleAxis, localVelocityX, localVelocityZ;
     private int startLineTouchCount = 0;
     private Transform _startTransform;
+    private float _carSpeed = 0;
 
     public void Initialize(UiController uiController)
     {
@@ -48,27 +51,31 @@ public class SimpleCarController : MonoBehaviour
     
     private void SetStartSettings()
     {
-        _carRigidbody.isKinematic = false;
+        Debug.Log("SetStartSettings");
         _carRigidbody.centerOfMass = bodyMassCenter;
         _meshCollider.enabled = true;
         transform.position = startPosition;
         transform.rotation = Quaternion.Euler(startRotation);
+        _carRigidbody.isKinematic = false;
+        startLineTouchCount = 0;
 
         AdjustWheelFriction();
     }
 
     void Update()
     {
+        float engineSoundPitch = initialCarEngineSoundPitch + (Mathf.Abs(_carRigidbody.velocity.magnitude) / 25f);
+        _carEngineSound.pitch = engineSoundPitch;
+        _carSpeed = (2 * Mathf.PI * frontLeftCollider.radius * frontLeftCollider.rpm * 60) / 1000;
         localVelocityX = transform.InverseTransformDirection(_carRigidbody.velocity).x;
         localVelocityZ = transform.InverseTransformDirection(_carRigidbody.velocity).z;
 
-        if (Input.GetKey(KeyCode.W)) GoForward();
-        else if (Input.GetKey(KeyCode.S)) GoReverse();
-        else ThrottleOff();
+        // 🔹 `Vertical` ve `Horizontal` ile giriş al
+        float verticalInput = Input.GetAxis("Vertical");   // W - S veya Yukarı - Aşağı ok tuşları
+        float horizontalInput = Input.GetAxis("Horizontal"); // A - D veya Sol - Sağ ok tuşları
 
-        if (Input.GetKey(KeyCode.A)) TurnLeft();
-        else if (Input.GetKey(KeyCode.D)) TurnRight();
-        else ResetSteeringAngle();
+        ApplyThrottle(verticalInput);
+        SetSteering(horizontalInput);
 
         ApplyStabilization(); // 🔹 Drift sırasında aracı dengele
 
@@ -84,18 +91,20 @@ public class SimpleCarController : MonoBehaviour
             {
                 EventManager.Execute(GameEvents.OnFinishGame);
                 Debug.Log("Game finished!");
+                
+                _carRigidbody.isKinematic = true;
                 _uiController.FinishGame();
             }
         }
     }
 
-    void GoForward() => ApplyThrottle(1);
-    void GoReverse() => ApplyThrottle(-1);
-    void ThrottleOff() => ApplyThrottle(0);
-
-    void TurnLeft() => SetSteering(-1);
-    void TurnRight() => SetSteering(1);
-    void ResetSteeringAngle() => SetSteering(0);
+    // void GoForward() => ApplyThrottle(1);
+    // void GoReverse() => ApplyThrottle(-1);
+    // void ThrottleOff() => ApplyThrottle(0);
+    //
+    // void TurnLeft() => SetSteering(-1);
+    // void TurnRight() => SetSteering(1);
+    // void ResetSteeringAngle() => SetSteering(0);
 
     void ApplyThrottle(float direction)
     {
@@ -134,7 +143,7 @@ public class SimpleCarController : MonoBehaviour
 
     void SetSteering(float direction)
     {
-        steeringAxis = Mathf.Lerp(steeringAxis, direction, Time.deltaTime * steeringSpeed * 5);
+        steeringAxis = Mathf.Lerp(steeringAxis, direction, Time.deltaTime * steeringSpeed * 15);
         float angle = steeringAxis * maxSteeringAngle;
         frontLeftCollider.steerAngle = frontRightCollider.steerAngle = angle;
     }

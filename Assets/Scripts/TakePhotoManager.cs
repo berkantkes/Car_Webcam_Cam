@@ -14,8 +14,9 @@ public class TakePhotoManager : MonoBehaviour
     private Texture2D targetTexture;
     private string photoSavePath;
     private bool isPhotoModeActive = false;
-    private int captureCount = 0; 
-
+    private int captureCount = 0;     
+    private bool webcamInitialized = false; // 📌 WebCam'in zaten başlatılıp başlatılmadığını kontrol eder
+    
     public void Initialize(BannerManager bannerManager)
     {
         _bannerManager = bannerManager;
@@ -40,7 +41,12 @@ public class TakePhotoManager : MonoBehaviour
     }
 
     private void StartTakePhoto()
-    {
+    { 
+        if (webcamInitialized) 
+        {
+            Debug.LogWarning("Photo Mode is already active! Skipping initialization.");
+            return; // 📌 Eğer WebCam zaten başlatılmışsa, tekrar açmaya çalışma
+        }
         PhotoCapture.CreateAsync(false, captureObject =>
         {
             photoCaptureObject = captureObject;
@@ -56,6 +62,7 @@ public class TakePhotoManager : MonoBehaviour
             photoCaptureObject.StartPhotoModeAsync(cameraParameters, result =>
             {
                 isPhotoModeActive = result.success;
+                webcamInitialized = true;
                 Debug.Log("Photo mode started: " + isPhotoModeActive);
                 
                 // 📌 **12 saniyede bir fotoğraf çekmeye başla**
@@ -66,6 +73,7 @@ public class TakePhotoManager : MonoBehaviour
     
     private IEnumerator CapturePhotoRoutine()
     {
+        captureCount = 0; 
         while (isPhotoModeActive && captureCount < 10) // 📌 10 kere çalışsın
         {
             yield return new WaitForSeconds(12f);

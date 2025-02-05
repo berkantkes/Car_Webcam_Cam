@@ -27,4 +27,10 @@ public class FinishGameCanvasManager : MonoBehaviour
         _leaderboardManager.Initialize();
         _userRaceResultPanelManager.gameObject.SetActive(false);
     }
+
+    public void RestartGame()
+    {
+        _leaderboardManager.gameObject.SetActive(false);
+        _raceResultRenderManager.ResetRenderCamera();
+    }
 }

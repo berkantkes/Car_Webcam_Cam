@@ -46,6 +46,12 @@ public class UiController : MonoBehaviour
         _finishGameCanvasManager.FinishGame();
     }
 
+    public void RestartGame()
+    {
+        _mainMenu.RestartGame();
+        _finishGameCanvasManager.RestartGame();
+    }
+
     public TMP_Text GetTimerText()
     {
         return _inGamePanelController.GetTimerText();

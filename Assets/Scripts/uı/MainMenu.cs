@@ -52,6 +52,11 @@ public class MainMenu : MonoBehaviour
         _settingsPopUpController.gameObject.SetActive(true);
     }
 
+    public void RestartGame()
+    {
+        _startPopUpController.CleanStartPopUp();
+    }
+
     public void QuitGame()
     {
         Application.Quit();

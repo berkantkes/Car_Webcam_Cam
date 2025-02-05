@@ -14,16 +14,22 @@ public class CameraFollow : MonoBehaviour
     private void OnEnable()
     {
         EventManager.Subscribe(GameEvents.OnFinishGame, BreakCameraFollow);
+        EventManager.Subscribe(GameEvents.OnStartGame, StartCameraFollow);
     }
 
     private void OnDisable()
     {
         EventManager.Unsubscribe(GameEvents.OnFinishGame, BreakCameraFollow);
+        EventManager.Unsubscribe(GameEvents.OnStartGame, StartCameraFollow);
     }
 
     private void BreakCameraFollow()
     {
         isFollowing = false; 
+    }
+    private void StartCameraFollow()
+    {
+        isFollowing = true; 
     }
 
     void LateUpdate()

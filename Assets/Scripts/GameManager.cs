@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private UiController _uiController;
     [SerializeField] private BannerManager _bannerManager;
     [SerializeField] private TakePhotoManager _takePhotoManager;
+    [SerializeField] private SimpleCarController _carController;
     
     public void Awake()
     {
@@ -21,13 +22,17 @@ public class GameManager : MonoBehaviour
     
     private void OnEnable()
     {
-        //EventManager.Subscribe(GameEvents.OnStartGame, Initialize);
+        EventManager.Subscribe(GameEvents.OnRestartGame, RestartGame);
     }
 
     private void OnDisable()
     {
-        //EventManager.Unsubscribe(GameEvents.OnStartGame, Initialize);
+        EventManager.Unsubscribe(GameEvents.OnRestartGame, RestartGame);
     }
 
+    private void RestartGame()
+    {
+        _uiController.RestartGame();
+    }
 
 }

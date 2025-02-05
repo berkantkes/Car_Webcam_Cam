@@ -27,6 +27,7 @@ public class LeaderboardManager : MonoBehaviour
 
     private void RestartGame()
     {
+        EventManager.Execute(GameEvents.OnRestartGame);
         _mainMenu.SetActive(true);
         gameObject.SetActive(false);
     }

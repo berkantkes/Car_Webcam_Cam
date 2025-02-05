@@ -45,6 +45,7 @@ public class StartPopUpController : MonoBehaviour
 
     public void CleanStartPopUp()
     {
+        gameObject.SetActive(false);
         _usernameInputField.text = "";
     }
 }
