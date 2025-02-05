@@ -1,42 +1,53 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 public class UiController : MonoBehaviour
 {
-    [FormerlySerializedAs("_photoGallery")] [SerializeField] private FinishCanvasManager finishCanvasManager;
+    [SerializeField] private FinishGameCanvasManager _finishGameCanvasManager;
     [SerializeField] private MainMenu _mainMenu;
-    [SerializeField] private TimeController _timeController;
-    [SerializeField] private GameObject _inGamePanel;
-    [SerializeField] private TakePhotoManager _takePhotoManager;
+    [SerializeField] private InGamePanelController _inGamePanelController;
 
-    private void Awake()
+    private TimeController _timeController;
+    public void Initialize(TimeController timeController)
     {
+        _timeController = timeController;
+        
         _mainMenu.Initialize();
-        finishCanvasManager.Initialize(_mainMenu.GetStartPopUpController(), _timeController);
     }
     
     private void OnEnable()
     {
         EventManager.Subscribe(GameEvents.OnStartGame, OpenInGamePanel);
-        EventManager.Subscribe(GameEvents.OnFinishGame, OpenPhotoGalleryPopup);
+        EventManager.Subscribe(GameEvents.OnFinishGame, OpenFinishGameCanvas);
     }
 
     private void OnDisable()
     {
         EventManager.Unsubscribe(GameEvents.OnStartGame, OpenInGamePanel);
-        EventManager.Unsubscribe(GameEvents.OnFinishGame, OpenPhotoGalleryPopup);
-    }
-    private void OpenPhotoGalleryPopup()
-    {
-        finishCanvasManager.gameObject.SetActive(true);
-        _inGamePanel.SetActive(false);
+        EventManager.Unsubscribe(GameEvents.OnFinishGame, OpenFinishGameCanvas);
     }
     private void OpenInGamePanel()
     {
-        _inGamePanel.SetActive(true);
-        _takePhotoManager.Initialize();
+        _inGamePanelController.gameObject.SetActive(true);
+    }
+    private void OpenFinishGameCanvas()
+    {
+        _finishGameCanvasManager.gameObject.SetActive(true);
+        _finishGameCanvasManager.Initialize(_mainMenu.GetStartPopUpController(), _timeController);
+        _inGamePanelController.gameObject.SetActive(false);
+    }
+    
+    public void FinishGame()
+    {
+        _finishGameCanvasManager.FinishGame();
+    }
+
+    public TMP_Text GetTimerText()
+    {
+        return _inGamePanelController.GetTimerText();
     }
 }

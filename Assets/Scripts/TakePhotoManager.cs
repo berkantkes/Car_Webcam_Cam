@@ -1,23 +1,24 @@
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEngine.Serialization;
 using UnityEngine.Windows.WebCam;
 
 public class TakePhotoManager : MonoBehaviour
 {
-    [SerializeField] private BannerManager _bannerManager;
-    [SerializeField] private FinishCanvasManager finishCanvasManager;
-
+    private BannerManager _bannerManager;
     private PhotoCapture photoCaptureObject;
     private Texture2D targetTexture;
     private string photoSavePath;
     private bool isPhotoModeActive = false;
     private int captureCount = 0; 
 
-    public void Initialize()
+    public void Initialize(BannerManager bannerManager)
     {
+        _bannerManager = bannerManager;
         // 📌 **Yeni yol: Assets/Resources/CapturedPhotos**
         photoSavePath = Path.Combine(Application.dataPath, "Resources", "CapturedPhotos");
         
@@ -25,8 +26,21 @@ public class TakePhotoManager : MonoBehaviour
         {
             Directory.CreateDirectory(photoSavePath);
         }
+        
+    }
 
-        // 📌 **Tek Seferde PhotoCapture Nesnesi Oluştur**
+    private void OnEnable()
+    {
+        EventManager.Subscribe(GameEvents.OnStartGame, StartTakePhoto);
+    }
+
+    private void OnDisable()
+    {
+        EventManager.Unsubscribe(GameEvents.OnStartGame, StartTakePhoto);
+    }
+
+    private void StartTakePhoto()
+    {
         PhotoCapture.CreateAsync(false, captureObject =>
         {
             photoCaptureObject = captureObject;
@@ -49,7 +63,7 @@ public class TakePhotoManager : MonoBehaviour
             });
         });
     }
-
+    
     private IEnumerator CapturePhotoRoutine()
     {
         while (isPhotoModeActive && captureCount < 10) // 📌 10 kere çalışsın

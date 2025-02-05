@@ -1,12 +1,15 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SimpleCarController : MonoBehaviour
 {
     [SerializeField] private Rigidbody _carRigidbody;
     [SerializeField] private MeshCollider _meshCollider;
-    [SerializeField] private FinishCanvasManager _finishCanvasManager;
-    
+    [SerializeField] private Vector3 startPosition = new Vector3(-2f, 0f, 27.25f);
+    [SerializeField] private Vector3 startRotation = new Vector3(0f, 270f, 0f);
+
+    private UiController _uiController;
     private int maxSpeed = 750;
     private int maxReverseSpeed = 55;
     private int accelerationMultiplier = 19;
@@ -17,31 +20,41 @@ public class SimpleCarController : MonoBehaviour
     private float naturalDrag = .5f; //  // 🔹 Yan kaymayı önlemek için stabilizasyon kuvvetiaz kesildiğinde daha hızlı yavaşlasın
     public float stabilizationForce = 5f; // 
 
-    public Vector3 bodyMassCenter = new Vector3(0, -0.5f, 0);
+    private Vector3 bodyMassCenter = new Vector3(0, 0, 0);
 
     public WheelCollider frontLeftCollider, frontRightCollider, rearLeftCollider, rearRightCollider;
     public GameObject frontLeftMesh, frontRightMesh, rearLeftMesh, rearRightMesh;
 
     private float steeringAxis, throttleAxis, localVelocityX, localVelocityZ;
     private int startLineTouchCount = 0;
+    private Transform _startTransform;
 
-    public void Initialize()
+    public void Initialize(UiController uiController)
     {
-        _carRigidbody.isKinematic = false;
-        _carRigidbody.centerOfMass = bodyMassCenter;
-        _meshCollider.enabled = true;
-
-        AdjustWheelFriction(); // 🔹 Drift'i azaltmak için sürtünmeyi ayarla
+        _uiController = uiController;
     }
-
+    
     private void OnEnable()
     {
+        EventManager.Subscribe(GameEvents.OnStartGame, SetStartSettings);
         EventManager.Subscribe(GameEvents.OnFinishGame, OnGameFinish);
     }
 
     private void OnDisable()
     {
+        EventManager.Unsubscribe(GameEvents.OnStartGame, SetStartSettings);
         EventManager.Unsubscribe(GameEvents.OnFinishGame, OnGameFinish);
+    }
+    
+    private void SetStartSettings()
+    {
+        _carRigidbody.isKinematic = false;
+        _carRigidbody.centerOfMass = bodyMassCenter;
+        _meshCollider.enabled = true;
+        transform.position = startPosition;
+        transform.rotation = Quaternion.Euler(startRotation);
+
+        AdjustWheelFriction();
     }
 
     void Update()
@@ -71,7 +84,7 @@ public class SimpleCarController : MonoBehaviour
             {
                 EventManager.Execute(GameEvents.OnFinishGame);
                 Debug.Log("Game finished!");
-                _finishCanvasManager.LoadPhotos();
+                _uiController.FinishGame();
             }
         }
     }
@@ -146,7 +159,7 @@ public class SimpleCarController : MonoBehaviour
         _meshCollider.enabled = false;
     }
 
-    // 🔹 Drift'i azaltmak için sürtünme değerlerini artır
+    
     private void AdjustWheelFriction()
     {
         SetFriction(frontLeftCollider, 1.5f, 2.5f);
@@ -166,7 +179,7 @@ public class SimpleCarController : MonoBehaviour
         wheel.sidewaysFriction = sidewaysFriction;
     }
 
-    // 🔹 Aracın fazla kaymasını engelle
+    
     private void ApplyStabilization()
     {
         if (Mathf.Abs(localVelocityX) > 2f) // Yan kayma algılanıyorsa

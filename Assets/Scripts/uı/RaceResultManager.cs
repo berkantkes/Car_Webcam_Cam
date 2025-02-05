@@ -7,7 +7,7 @@ public class RaceResultManager : MonoBehaviour
 {
     private string savePath;
 
-    private void Start()
+    public void Initialize()
     {
         // 📌 **Kayıt yolu: StreamingAssets/RaceResults**
         savePath = Path.Combine(Application.streamingAssetsPath, "RaceResults");

@@ -1,17 +1,37 @@
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine.UI;
 
 public class LeaderboardManager : MonoBehaviour
 {
     [SerializeField] private List<SingleLeaderboardMemberController> leaderboardEntries;
+    [SerializeField] private Button _restartButton;
+    [SerializeField] private GameObject _mainMenu;
 
     public void Initialize()
     {
         LoadLeaderboard();
     }
 
-    public void LoadLeaderboard()
+    private void OnEnable()
+    {
+        _restartButton.onClick.AddListener(RestartGame);
+    }
+
+    private void OnDisable()
+    {
+        _restartButton.onClick.RemoveListener(RestartGame);
+    }
+
+    private void RestartGame()
+    {
+        _mainMenu.SetActive(true);
+        gameObject.SetActive(false);
+    }
+
+    private void LoadLeaderboard()
     {
         RaceResultManager raceResultManager = FindObjectOfType<RaceResultManager>();
         if (raceResultManager == null)

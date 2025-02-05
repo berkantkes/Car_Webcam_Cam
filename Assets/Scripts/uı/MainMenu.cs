@@ -12,7 +12,7 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private Button _exitButton;
     [SerializeField] private StartPopUpController _startPopUpController; 
     [SerializeField] private SettingsPopUpController _settingsPopUpController;
-    [FormerlySerializedAs("_photoGallery")] [SerializeField] private FinishCanvasManager finishCanvasManager;
+    //[SerializeField] private FinishCanvasManager finishCanvasManager;
 
     private bool isSoundOn = true;
 

@@ -42,4 +42,9 @@ public class StartPopUpController : MonoBehaviour
         EventManager.Execute(GameEvents.OnStartGame);
         Debug.Log("StartGame, username: " + _username);
     }
+
+    public void CleanStartPopUp()
+    {
+        _usernameInputField.text = "";
+    }
 }

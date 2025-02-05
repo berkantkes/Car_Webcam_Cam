@@ -10,12 +10,12 @@ public class TimeController : MonoBehaviour
     private float elapsedTime = 0f;
 
     public float ElapsedTime => elapsedTime;
-    
-    public void Initialize()
-    {
-        isCounting = true;
-    }
 
+    public void Initialize(UiController uiController)
+    {
+        timerText = uiController.GetTimerText();
+    }
+    
     private void OnEnable()
     {
         EventManager.Subscribe(GameEvents.OnStartGame, ResetTimer);
@@ -54,6 +54,7 @@ public class TimeController : MonoBehaviour
     private void ResetTimer()
     {
         elapsedTime = 0f;
+        isCounting = true;
         UpdateTimerText();
     }
 }

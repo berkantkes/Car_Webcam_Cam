@@ -20,4 +20,12 @@ public class BannerManager : MonoBehaviour
             Debug.Log("All banners already have sprites assigned");
         }
     }
+
+    public void CleanBanners()
+    {
+        foreach (var banner in _banners)
+        {
+            banner.CleanBanner();
+        }
+    }
 }

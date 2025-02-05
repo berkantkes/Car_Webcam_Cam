@@ -18,4 +18,12 @@ public class Banner : MonoBehaviour
 
         _isAttachedSprite = true;
     }
+
+    public void CleanBanner()
+    {
+        foreach (var bannerSpriteRenderer in _bannerSpriteRenderers)
+        {
+            bannerSpriteRenderer.sprite = null;
+        }
+    }
 }
