@@ -6,6 +6,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 
 public class FinishCanvasManager : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class FinishCanvasManager : MonoBehaviour
     [SerializeField] private TMP_Text _timeText; 
     [SerializeField] private TMP_Text _usernameText;
     [SerializeField] private ScreenSpaceCanvasRenderer _screenSpaceCanvasRenderer;
+    [SerializeField] private LeaderboardManager _leaderboardManager;
 
     private TimeController _timeController;
     private StartPopUpController _startPopUpController;
@@ -27,13 +29,13 @@ public class FinishCanvasManager : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.U))
-        {
-            _screenSpaceCanvasRenderer.CaptureScreenshot();
-        }
+        // if (Input.GetKeyDown(KeyCode.U))
+        // {
+        //     _screenSpaceCanvasRenderer.CaptureScreenshot();
+        // }
     }
 
-    public void LoadPhotos()
+    public async void LoadPhotos()
     {
         if (!Directory.Exists(_photoFolderPath)) return;
 
@@ -63,7 +65,13 @@ public class FinishCanvasManager : MonoBehaviour
         int fraction = Mathf.FloorToInt((elapsedTime * 100f) % 100f);
 
         _timeText.SetText("Time : " + string.Format("{0:00}:{1:00}:{2:00}", minutes, seconds, fraction));
-        _screenSpaceCanvasRenderer.CaptureScreenshot();
+        _screenSpaceCanvasRenderer.CaptureScreenshot(_startPopUpController.Username, elapsedTime);
+
+        await UniTask.WaitForSeconds(10);
+        
+        _leaderboardManager.gameObject.SetActive(true);
+        _leaderboardManager.Initialize();
+        gameObject.SetActive(true);
     }
 
     private IEnumerator LoadImage(string filePath, Image targetImage)

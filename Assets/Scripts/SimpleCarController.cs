@@ -5,6 +5,7 @@ public class SimpleCarController : MonoBehaviour
 {
     [SerializeField] private Rigidbody _carRigidbody;
     [SerializeField] private MeshCollider _meshCollider;
+    [SerializeField] private FinishCanvasManager _finishCanvasManager;
     
     private int maxSpeed = 750;
     private int maxReverseSpeed = 55;
@@ -22,6 +23,7 @@ public class SimpleCarController : MonoBehaviour
     public GameObject frontLeftMesh, frontRightMesh, rearLeftMesh, rearRightMesh;
 
     private float steeringAxis, throttleAxis, localVelocityX, localVelocityZ;
+    private int startLineTouchCount = 0;
 
     public void Initialize()
     {
@@ -58,6 +60,20 @@ public class SimpleCarController : MonoBehaviour
         ApplyStabilization(); // 🔹 Drift sırasında aracı dengele
 
         AnimateWheelMeshes();
+    }
+    
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("StartLine"))
+        {
+            startLineTouchCount++;
+            if (startLineTouchCount == 4)
+            {
+                EventManager.Execute(GameEvents.OnFinishGame);
+                Debug.Log("Game finished!");
+                _finishCanvasManager.LoadPhotos();
+            }
+        }
     }
 
     void GoForward() => ApplyThrottle(1);

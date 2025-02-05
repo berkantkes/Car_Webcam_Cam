@@ -3,13 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEngine.Serialization;
 using UnityEngine.Windows.WebCam;
 
 public class TakePhotoManager : MonoBehaviour
 {
-    [SerializeField] private BannerManager _bannerManager; // 📌 BannerManager referansı
-    [FormerlySerializedAs("_photoGallery")] [SerializeField] private FinishCanvasManager finishCanvasManager;
+    [SerializeField] private BannerManager _bannerManager;
+    [SerializeField] private FinishCanvasManager finishCanvasManager;
 
     private PhotoCapture photoCaptureObject;
     private Texture2D targetTexture;
@@ -19,7 +18,9 @@ public class TakePhotoManager : MonoBehaviour
 
     public void Initialize()
     {
-        photoSavePath = Path.Combine(Application.persistentDataPath, "CapturedPhotos");
+        // 📌 **Yeni yol: Assets/Resources/CapturedPhotos**
+        photoSavePath = Path.Combine(Application.dataPath, "Resources", "CapturedPhotos");
+        
         if (!Directory.Exists(photoSavePath))
         {
             Directory.CreateDirectory(photoSavePath);
@@ -92,6 +93,10 @@ public class TakePhotoManager : MonoBehaviour
             // 📌 **Fotoğrafı bir Sprite olarak oluştur ve BannerManager'a gönder**
             Sprite photoSprite = Sprite.Create(targetTexture, new Rect(0, 0, targetTexture.width, targetTexture.height), new Vector2(0.5f, 0.5f));
             _bannerManager.SetBannerSprite(photoSprite);
+
+            // 📌 **Resources.Load ile erişebilmek için dosya adını kaydet**
+            string resourcesPath = "CapturedPhotos/" + Path.GetFileNameWithoutExtension(filePath);
+            Debug.Log($"Photo saved in Resources: {resourcesPath}");
         }
     }
 

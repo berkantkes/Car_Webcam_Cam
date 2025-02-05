@@ -4,18 +4,30 @@ using System.IO;
 
 public class ScreenSpaceCanvasRenderer : MonoBehaviour
 {
+    [SerializeField] private RaceResultManager _raceResultManager;
     public Camera renderCamera; // Canvas ile ilişkili kamera
     public int resolutionWidth = 1920;
     public int resolutionHeight = 1080;
 
     private RenderTexture renderTexture;
+    private string savePath;
 
-    public void CaptureScreenshot()
+    private void Start()
     {
-        StartCoroutine(CaptureScreenSpaceCanvas());
+        // 📌 **Kayıt klasörünü ayarla**
+        savePath = Path.Combine(Application.dataPath, "Resources", "RaceResult");
+        if (!Directory.Exists(savePath))
+        {
+            Directory.CreateDirectory(savePath);
+        }
     }
 
-    private IEnumerator CaptureScreenSpaceCanvas()
+    public void CaptureScreenshot(string username, float elapsedTime)
+    {
+        StartCoroutine(CaptureScreenSpaceCanvas(username, elapsedTime));
+    }
+
+    private IEnumerator CaptureScreenSpaceCanvas(string username, float elapsedTime)
     {
         // RenderTexture oluştur
         renderCamera.depth = 2;
@@ -31,16 +43,35 @@ public class ScreenSpaceCanvasRenderer : MonoBehaviour
         tex.ReadPixels(new Rect(0, 0, resolutionWidth, resolutionHeight), 0, 0);
         tex.Apply();
 
+        // 📌 **Dosya adını oluştur**
+        string fileName = "race_result_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+        string filePath = Path.Combine(savePath, fileName);
+
         // PNG olarak kaydet
         byte[] bytes = tex.EncodeToPNG();
-        string filePath = Application.streamingAssetsPath + "/race_result.png";
         File.WriteAllBytes(filePath, bytes);
         Debug.Log("Yarış sonucu kaydedildi: " + filePath);
 
+        // 📌 **Resources'dan erişim için yolu logla**
+        string resourcesPath = "RaceResult/" + Path.GetFileNameWithoutExtension(filePath);
+        Debug.Log($"Race result saved in Resources: {resourcesPath}");
+
+        
+        Sprite raceSprite = LoadSpriteFromFile(filePath);
+        _raceResultManager.SaveRaceResult(username, elapsedTime, raceSprite);
+        
         // Belleği temizle
         RenderTexture.active = null;
         renderCamera.targetTexture = null;
         renderTexture.Release();
         Destroy(renderTexture);
+    }
+    
+    private Sprite LoadSpriteFromFile(string filePath)
+    {
+        byte[] fileData = File.ReadAllBytes(filePath);
+        Texture2D texture = new Texture2D(2, 2);
+        texture.LoadImage(fileData);
+        return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
     }
 }
